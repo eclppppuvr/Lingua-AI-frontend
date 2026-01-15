@@ -1,6 +1,6 @@
 // frontend/js/api.js - API система с админ-функциями
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://90.156.230.7:8000';
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
