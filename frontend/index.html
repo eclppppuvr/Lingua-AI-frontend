@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinguaAI - Тренировка произношения</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎤</text></svg>">
+</head>
+<body>
+<!-- Header -->
+<header>
+    <div class="container">
+        <nav class="navbar">
+            <a href="#" class="logo" onclick="showPage('home'); return false;">LinguaAI</a>
+            <ul class="nav-links">
+                <li><a href="#" onclick="showPage('home'); return false;" class="active">Главная</a></li>
+                <li><a href="#" onclick="showPage('library'); return false;">Библиотека</a></li>
+                <li><a href="#" onclick="showPage('practice'); return false;">Мои слова</a></li>
+                <li><a href="#" onclick="showPage('profile'); return false;">Профиль</a></li>
+            </ul>
+            <div class="auth-buttons" id="auth-buttons">
+                <button class="btn btn-secondary" onclick="showPage('login'); return false;">Вход</button>
+                <button class="btn btn-primary" onclick="showPage('register'); return false;">Регистрация</button>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="container">
+    <!-- Home Page -->
+    <section id="home" class="page active">
+        <div class="hero">
+            <h1>Совершенствуйте произношение с AI-ассистентом</h1>
+            <p>Простая платформа для тренировки проблемных слов и получения обратной связи</p>
+            <button class="btn btn-primary btn-lg" onclick="showPage('library'); return false;">
+                Начать тренировку
+            </button>
+        </div>
+
+        <div class="features">
+            <div class="card feature-card">
+                <div class="feature-icon">🎤</div>
+                <h3>Запись речи</h3>
+                <p>Записывайте свое произношение слов и получайте обратную связь</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Анализ ошибок</h3>
+                <p>Выявление проблемных слов для дальнейшей практики</p>
+            </div>
+            <div class="card feature-card">
+                <div class="feature-icon">💾</div>
+                <h3>Мои слова</h3>
+                <p>Сохранение и повторение слов, которые вызывают затруднения</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Library Page -->
+    <section id="library" class="page">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">Библиотека текстов</h1>
+            <button class="btn btn-secondary" onclick="showPage('admin')" id="admin-btn" style="display: none;">
+                👑 Админ
+            </button>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="level">Уровень сложности</label>
+                <select id="level" onchange="filterTexts()">
+                    <option value="">Все уровни</option>
+                    <option value="A1">Начальный A1</option>
+                    <option value="A2">Начальный A2</option>
+                    <option value="B1">Средний B1</option>
+                    <option value="B2">Средний B2</option>
+                    <option value="C1">Продвинутый C1</option>
+                    <option value="C2">Продвинутый C2</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="topic">Тематика</label>
+                <select id="topic" onchange="filterTexts()">
+                    <option value="">Все темы</option>
+                    <!-- Темы будут загружены динамически -->
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="search">Поиск</label>
+                <input type="text" id="search" placeholder="Название текста..." oninput="filterTexts()">
+            </div>
+        </div>
+
+        <div class="texts-grid" id="texts-container">
+            <!-- Texts will be populated by JavaScript -->
+        </div>
+    </section>
+
+    <!-- Recording Page -->
+    <section id="recording" class="page">
+        <h1 class="text-2xl font-bold mb-3" id="recording-title"></h1>
+
+        <div class="recording-container">
+            <div class="text-display" id="text-display">
+                <!-- Text will be populated by JavaScript -->
+            </div>
+
+            <div class="controls-panel">
+                <div class="recording-status status-idle" id="recording-status">
+                    Готов к записи
+                </div>
+
+                <div class="timer" id="timer">00:00</div>
+
+                <div class="audio-visualizer" id="audio-visualizer">
+                    <!-- Audio bars will be generated by JavaScript -->
+                </div>
+
+                <div class="recording-controls" id="recording-controls">
+                    <button class="btn btn-primary" id="start-record-btn" onclick="window.startRecording()">
+                        <span>🎤</span> Начать запись
+                    </button>
+                    <button class="btn btn-danger" id="stop-record-btn" onclick="window.stopRecording()" style="display: none;">
+                        <span>⏹️</span> Остановить запись
+                    </button>
+                </div>
+
+                <div id="recording-result" style="display: none; margin-top: 20px;">
+                    <div class="audio-info-card">
+                        <h3>🎧 Запись готова</h3>
+
+                        <div class="file-info">
+                            <div>
+                                <span>Длительность:</span>
+                                <span id="recording-file-duration">0:00</span>
+                            </div>
+                            <div>
+                                <span>Размер:</span>
+                                <span id="recording-file-size">0 MB</span>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="analyzeAndShowResults()">
+                                <span>🔍</span> Проанализировать
+                            </button>
+                            <button class="btn btn-secondary" onclick="showPage('library'); return false;">
+                                ← Назад к библиотеке
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetRecording()">
+                                🔄 Записать снова
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Page -->
+    <section id="results" class="page">
+        <div class="results-header">
+            <h1 class="text-2xl font-bold">Результаты анализа</h1>
+            <div class="flex gap-2">
+                <button class="btn btn-secondary" onclick="showPage('recording'); return false;">
+                    🔄 Записать снова
+                </button>
+            </div>
+        </div>
+
+        <div class="card score-card mb-3">
+            <div class="score" id="accuracy-score">0%</div>
+            <p>Точность произношения</p>
+            <div class="text-sm mt-2" id="score-details">
+                <!-- Пояснение будет добавлено JavaScript -->
+            </div>
+            <div class="mt-3">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-grid">
+            <div class="card">
+                <h2 class="text-xl font-bold mb-3">Оригинальный текст</h2>
+                <div class="text-content bg-gray-50 p-3 rounded mb-4" id="original-text">
+                    <!-- Original text will be populated by JavaScript -->
+                </div>
+
+                <h2 class="text-xl font-bold mb-2">Распознанный текст</h2>
+                <div class="text-content bg-blue-50 p-3 rounded" id="recognized-text">
+                    <!-- Recognized text will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="font-bold mb-3">Детали ошибок</h3>
+                <div id="error-details" class="error-details">
+                    <!-- Детали ошибок будут загружены здесь -->
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="problem-words-list" class="problem-words-list">
+                    <!-- Проблемные слова будут загружены здесь -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practice Page (Мои слова) -->
+    <section id="practice" class="page">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">Мои слова для практики</h1>
+            <div class="flex gap-2">
+                <button class="btn btn-secondary" onclick="refreshWords()">
+                    🔄 Обновить
+                </button>
+                <button class="btn btn-primary" onclick="startPracticeSession()">
+                    🎯 Начать практику
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid mb-4">
+            <div class="stat-card">
+                <div class="stat-number" id="total-words">0</div>
+                <p>Всего слов</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="practiced-words">0</div>
+                <p>Практикуется</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="mastered-words">0</div>
+                <p>Освоено</p>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="today-practiced">0</div>
+                <p>Сегодня</p>
+            </div>
+        </div>
+
+        <div class="words-grid" id="words-container">
+            <!-- Words will be populated by JavaScript -->
+        </div>
+
+        <div class="no-words" id="no-words" style="display: none;">
+            <div class="text-center py-10">
+                <div class="text-5xl mb-4">📚</div>
+                <h3 class="text-xl font-bold mb-2">Нет слов для практики</h3>
+                <p class="text-gray-600 mb-4">Пройти анализ текста, чтобы добавить проблемные слова</p>
+                <button class="btn btn-primary" onclick="showPage('library'); return false;">
+                    📖 К библиотеке
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practice Session Page -->
+    <section id="practice-session" class="page">
+        <div class="practice-session-container">
+            <div class="session-header">
+                <h1 class="text-2xl font-bold">Практика слов</h1>
+                <div class="session-info">
+                    <span>Слово <span id="current-word-index">1</span> из <span id="total-words-count">0</span></span>
+                </div>
+            </div>
+
+            <div class="card session-card">
+                <div class="current-word" id="current-word-display">
+                    <!-- Current word will be populated by JavaScript -->
+                </div>
+
+                <div class="word-actions">
+                    <button class="btn btn-secondary btn-large" onclick="speakCurrentWord()">
+                        🔊 Произношение
+                    </button>
+                    <button class="btn btn-primary btn-large" onclick="startPracticeRecording()" id="practice-record-btn">
+                        🎤 Записать
+                    </button>
+                </div>
+
+                <div class="practice-recording" id="practice-recording" style="display: none;">
+                    <div class="recording-status status-idle" id="practice-status">
+                        Готов к записи
+                    </div>
+                    <div class="timer" id="practice-timer">00:00</div>
+
+                    <div class="practice-controls">
+                        <button class="btn btn-success" onclick="savePracticeRecording()" id="save-practice-btn" style="display: none;">
+                            ✅ Сохранить
+                        </button>
+                        <button class="btn btn-secondary" onclick="skipWord()">
+                            ⏭️ Пропустить
+                        </button>
+                    </div>
+                </div>
+
+                <div class="session-progress">
+                    <div class="progress-text">
+                        Прогресс: <span id="session-progress">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="session-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-controls">
+                <button class="btn btn-secondary" onclick="showPage('practice'); return false;">
+                    ← Назад к словам
+                </button>
+                <button class="btn btn-primary" onclick="nextWord()" id="next-word-btn" style="display: none;">
+                    Следующее слово →
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Page -->
+    <section id="profile" class="page">
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-3">Настройки профиля</h2>
+            <form class="auth-form" id="profile-form">
+                <div class="form-group">
+                    <label for="profile-name">Имя</label>
+                    <input type="text" id="profile-name" value="Иван Иванов">
+                </div>
+                <div class="form-group">
+                    <label for="profile-email">Email</label>
+                    <input type="email" id="profile-email" value="ivan@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="profile-language">Целевой язык</label>
+                    <select id="profile-language">
+                        <option value="en">Английский</option>
+                        <option value="ru">Русский</option>
+                        <option value="es">Испанский</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profile-level">Уровень</label>
+                    <select id="profile-level">
+                        <option value="beginner">Начальный</option>
+                        <option value="intermediate" selected>Средний</option>
+                        <option value="advanced">Продвинутый</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Admin Page -->
+    <section id="admin" class="page">
+        <h1 class="text-2xl font-bold mb-3">Панель администратора</h1>
+
+        <div class="admin-tabs mb-4">
+            <button class="tab-btn active" onclick="showAdminTab('create-text')">➕ Добавить текст</button>
+            <button class="tab-btn" onclick="showAdminTab('manage-texts')">📚 Управление текстами</button>
+            <button class="tab-btn" onclick="showAdminTab('statistics')">📊 Статистика</button>
+        </div>
+
+        <div id="create-text-tab" class="admin-tab active">
+            <div class="card">
+                <h2 class="text-xl font-bold mb-3">Добавить новый текст</h2>
+                <form id="create-text-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="text-title">Название текста *</label>
+                        <input type="text" id="text-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="text-content">Содержимое текста *</label>
+                        <textarea id="text-content" rows="6" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="form-group">
+                            <label for="text-level">Уровень *</label>
+                            <select id="text-level" required>
+                                <option value="">Выберите уровень</option>
+                                <option value="A1">A1 (Начальный)</option>
+                                <option value="A2">A2 (Базовый)</option>
+                                <option value="B1">B1 (Средний)</option>
+                                <option value="B2">B2 (Выше среднего)</option>
+                                <option value="C1">C1 (Продвинутый)</option>
+                                <option value="C2">C2 (Профессиональный)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="text-topic">Тематика *</label>
+                            <input type="text" id="text-topic" required placeholder="Например: Путешествия, Работа...">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Создать текст</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="manage-texts-tab" class="admin-tab">
+            <div class="card">
+                <h2 class="text-xl font-bold mb-3">Управление текстами</h2>
+                <div id="admin-texts-list">
+                    <p>Загрузка текстов...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="statistics-tab" class="admin-tab">
+            <div class="card">
+                <h2 class="text-xl font-bold mb-3">Статистика платформы</h2>
+                <div id="admin-stats">
+                    <p>Статистика будет здесь...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Page -->
+    <section id="login" class="page">
+        <div class="card auth-container">
+            <h2 class="text-2xl font-bold mb-3 text-center">Вход в аккаунт</h2>
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Пароль</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+            <p class="text-center mt-2">
+                Нет аккаунта? <a href="#" onclick="showPage('register'); return false;">Зарегистрируйтесь</a>
+            </p>
+        </div>
+    </section>
+
+    <!-- Register Page -->
+    <section id="register" class="page">
+        <div class="card auth-container">
+            <h2 class="text-2xl font-bold mb-3 text-center">Регистрация</h2>
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-username">Имя пользователя</label>
+                    <input type="text" id="register-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Пароль</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password-confirm">Подтвердите пароль</label>
+                    <input type="password" id="register-password-confirm" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+            </form>
+            <p class="text-center mt-2">
+                Уже есть аккаунт? <a href="#" onclick="showPage('login'); return false;">Войти</a>
+            </p>
+        </div>
+    </section>
+</main>
+
+<!-- TTS Controls -->
+<div class="tts-controls" id="tts-controls" style="display: none;">
+    <button class="tts-control-btn" onclick="stopTTSPlayback()" title="Остановить воспроизведение">
+        ⏹️
+    </button>
+    <div class="tts-current-word" id="tts-current-word"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/recording.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🌐 LinguaAI loaded');
+
+        // Проверяем авторизацию
+        const user = localStorage.getItem('current_user');
+        if (user) {
+            updateNavigation();
+        }
+
+        // Инициализируем формы
+        if (typeof initializeForms !== 'undefined') {
+            initializeForms();
+        } else {
+            console.error('initializeForms is not defined');
+        }
+    });
+</script>
+</body>
+</html>
