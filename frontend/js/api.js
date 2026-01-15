@@ -1,6 +1,7 @@
 // frontend/js/api.js - API система с админ-функциями
 
-const API_BASE_URL = 'http://90.156.230.7:8000';
+// И ЗАМЕНИТЕ базовый URL:
+const API_BASE_URL = '/api';  // Теперь будет проксироваться через Vercel
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
@@ -48,7 +49,8 @@ function updateNavigation() {
 
 // ==================== API FUNCTIONS ====================
 async function apiFetch(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    // Всегда используем /api префикс
+    const url = `/api${endpoint}`;
 
     console.log('🌐 API Request:', {
         endpoint,
@@ -79,11 +81,9 @@ async function apiFetch(endpoint, options = {}) {
             let errorText = '';
             try {
                 errorText = await response.text();
-                console.error('❌ Response error text:', errorText);
             } catch (e) {
                 errorText = 'Cannot read error response';
             }
-
             throw new Error(`HTTP ${response.status}: ${response.statusText}. ${errorText}`);
         }
 
