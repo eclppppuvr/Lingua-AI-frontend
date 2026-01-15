@@ -2,7 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://api.linguaai.webtm.ru/:path*"
+      "destination": "https://api.linguaai.webtm.ru/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://api.linguaai.webtm.ru/auth/:path*"
     }
   ]
 }
