@@ -48,39 +48,69 @@ function updateNavigation() {
 
 // ==================== API FUNCTIONS ====================
 async function apiFetch(endpoint, options = {}) {
-    let url;
+    const url = `${API_BASE_URL}${endpoint}`;
 
-    if (isGitHubPages) {
-        // Используем CORS прокси для GitHub Pages
-        url = `https://corsproxy.io/?${encodeURIComponent(`http://90.156.230.7:8000${endpoint}`)}`;
-    } else {
-        url = `${API_BASE_URL}${endpoint}`;
-    }
-
-    console.log('🌐 API Request:', url);
+    console.log('🌐 API Request:', url, options.method || 'GET');
 
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
     };
 
+    // Добавляем токен авторизации если есть
+    if (currentUser && currentUser.token) {
+        headers['Authorization'] = `Bearer ${currentUser.token}`;
+    }
+
     try {
         const response = await fetch(url, {
             ...options,
             headers,
-            credentials: isGitHubPages ? 'omit' : 'include'
+            credentials: 'include'
         });
 
+        console.log('API Response:', response.status, response.statusText);
+
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            // Пробуем получить текст ошибки
+            let errorText = 'Unknown error';
+            try {
+                errorText = await response.text();
+            } catch {
+                // Игнорируем ошибку чтения текста
+            }
+
+            if (response.status === 401) {
+                // Авторизация не прошла
+                clearUserData();
+                throw new Error('Authentication required');
+            } else if (response.status === 404) {
+                throw new Error('Endpoint not found: ' + endpoint);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
         }
 
-        return await response.json();
+        // Проверяем тип контента
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        } else {
+            return await response.text();
+        }
+
     } catch (error) {
         console.error('API Error:', error);
+
+        // Проверка сетевых ошибок
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            throw new Error('Network error: Cannot connect to server');
+        }
+
         throw error;
     }
 }
+
 
 // ==================== AUTH FUNCTIONS ====================
 async function login(email, password) {
