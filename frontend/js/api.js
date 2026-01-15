@@ -1,6 +1,6 @@
 // frontend/js/api.js - API система с админ-функциями
 
-const API_BASE_URL = 'http://api.linguaai.webtm.ru';
+const API_BASE_URL = '/api';
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
