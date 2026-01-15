@@ -1,7 +1,7 @@
 // frontend/js/api.js - API система с админ-функциями
 
 const API_BASE_URL = '/api';
-
+const isGitHubPages = false; // или true, если вы на GitHub Pages
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
 
@@ -47,40 +47,42 @@ function updateNavigation() {
 }
 
 // ==================== API FUNCTIONS ====================
-async function apiFetch(endpoint, options = {}) {
-    let url;
-
-    if (isGitHubPages) {
-        // Используем CORS прокси для GitHub Pages
-        url = `https://corsproxy.io/?${encodeURIComponent(`http://90.156.230.7:8000${endpoint}`)}`;
-    } else {
-        url = `${API_BASE_URL}${endpoint}`;
-    }
-
-    console.log('🌐 API Request:', url);
-
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
-    };
-
+const apiFetch = async (endpoint, options = {}) => {
     try {
-        const response = await fetch(url, {
+        console.log('🌐 API Request:', endpoint, options.method || 'GET');
+
+        // Упрощаем базовый URL - используем относительный путь
+        const API_BASE_URL = ''; // или '/api' если есть прокси
+
+        // Если нужен абсолютный URL (для продакшена)
+        // const API_BASE_URL = process.env.NODE_ENV === 'production'
+        //   ? 'https://api.linguaai.webtm.ru'
+        //   : 'http://localhost:3000';
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
-            headers,
-            credentials: isGitHubPages ? 'omit' : 'include'
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
         });
 
+        console.log('📄 Response status:', response.status);
+
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log('✅ API Response:', data);
+
+        return data;
     } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        console.error('❌ API Error:', error);
+        throw new Error(`Network error: ${error.message}`);
     }
-}
+};
 
 // ==================== AUTH FUNCTIONS ====================
 async function login(email, password) {
