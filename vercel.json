@@ -1,0 +1,9 @@
+﻿{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "http://90.156.230.7:8000/$1"
+    }
+  ],
+  "outputDirectory": "frontend"
+}
