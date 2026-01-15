@@ -5,7 +5,6 @@ const API_BASE_URL = '/api';
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
 
-// ==================== Вспомогательные функции ====================
 function saveUserData(userData) {
     currentUser = userData;
     localStorage.setItem('current_user', JSON.stringify(userData));
@@ -28,6 +27,7 @@ function updateNavigation() {
             <button class="btn btn-secondary" onclick="logout()">Выход</button>
         `;
 
+        // Показать кнопку админа если пользователь - админ
         const adminBtn = document.getElementById('admin-btn');
         if (adminBtn && currentUser.role === 'admin') {
             adminBtn.style.display = 'inline-flex';
@@ -38,6 +38,7 @@ function updateNavigation() {
             <button class="btn btn-primary" onclick="showPage('register'); return false;">Регистрация</button>
         `;
 
+        // Скрыть кнопку админа
         const adminBtn = document.getElementById('admin-btn');
         if (adminBtn) {
             adminBtn.style.display = 'none';
@@ -47,71 +48,40 @@ function updateNavigation() {
 
 // ==================== API FUNCTIONS ====================
 async function apiFetch(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    let url;
 
-    console.log('🌐 API Request:', url, options.method || 'GET');
+    if (isGitHubPages) {
+        // Используем CORS прокси для GitHub Pages
+        url = `https://corsproxy.io/?${encodeURIComponent(`http://90.156.230.7:8000${endpoint}`)}`;
+    } else {
+        url = `${API_BASE_URL}${endpoint}`;
+    }
+
+    console.log('🌐 API Request:', url);
 
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
     };
 
-    // Добавляем токен авторизации если есть
-    if (currentUser && currentUser.token) {
-        headers['Authorization'] = `Bearer ${currentUser.token}`;
-    }
-
     try {
         const response = await fetch(url, {
             ...options,
             headers,
-            credentials: 'include'
+            credentials: isGitHubPages ? 'omit' : 'include'
         });
 
-        console.log('API Response:', response.status, response.statusText);
-
         if (!response.ok) {
-            // Пробуем получить текст ошибки
-            let errorText = 'Unknown error';
-            try {
-                errorText = await response.text();
-            } catch {
-                // Игнорируем ошибку чтения текста
-            }
-
-            if (response.status === 401) {
-                // Авторизация не прошла
-                clearUserData();
-                throw new Error('Authentication required');
-            } else if (response.status === 404) {
-                throw new Error('Endpoint not found: ' + endpoint);
-            } else {
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
+            throw new Error(`HTTP ${response.status}`);
         }
 
-        // Проверяем тип контента
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            return await response.json();
-        } else {
-            return await response.text();
-        }
-
+        return await response.json();
     } catch (error) {
         console.error('API Error:', error);
-
-        // Проверка сетевых ошибок
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            throw new Error('Network error: Cannot connect to server');
-        }
-
         throw error;
     }
 }
 
-
-// ==================== AUTH FUNCTIONS ====================
 // ==================== AUTH FUNCTIONS ====================
 async function login(email, password) {
     try {
@@ -120,27 +90,14 @@ async function login(email, password) {
             body: JSON.stringify({ email, password })
         });
 
-        // Сохраняем пользователя с токеном
-        if (user && user.token) {
-            saveUserData(user);
-            showSuccess('Вход выполнен успешно!');
-            showPage('library');
-            return user;
-        } else {
-            throw new Error('Invalid response from server');
-        }
+        saveUserData(user);
+        showSuccess('Вход выполнен успешно!');
+        showPage('library');
+        return user;
 
     } catch (error) {
         console.error('Login failed:', error);
-
-        // Пользовательские сообщения об ошибках
-        if (error.message.includes('Network error')) {
-            throw new Error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
-        } else if (error.message.includes('404')) {
-            throw new Error('Сервер не найден. Проверьте настройки backend.');
-        } else {
-            throw new Error('Неверный email или пароль');
-        }
+        throw error;
     }
 }
 
@@ -151,26 +108,16 @@ async function register(username, email, password) {
             body: JSON.stringify({ username, email, password })
         });
 
-        if (user && user.token) {
-            saveUserData(user);
-            showSuccess('Регистрация успешна!');
-            showPage('library');
-            return user;
-        } else {
-            throw new Error('Invalid response from server');
-        }
+        saveUserData(user);
+        showSuccess('Регистрация успешна!');
+        showPage('library');
+        return user;
 
     } catch (error) {
         console.error('Registration failed:', error);
-
-        if (error.message.includes('Network error')) {
-            throw new Error('Не удалось подключиться к серверу');
-        } else {
-            throw new Error('Ошибка регистрации: ' + error.message);
-        }
+        throw error;
     }
 }
-
 
 async function logout() {
     try {
@@ -490,11 +437,14 @@ async function speakWord(word) {
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
     if (currentUser) {
-        updateNavigation();
+        getCurrentUser().catch(console.error);
     }
 });
 
 // ==================== EXPORTS ====================
+window.login = login;
+window.register = register;
+window.logout = logout;
 window.loadTexts = loadTexts;
 window.loadText = loadText;
 window.analyzeAudio = analyzeAudio;
@@ -509,14 +459,6 @@ window.deleteText = deleteText;
 window.updateText = updateText;
 window.getAllTextsForAdmin = getAllTextsForAdmin;
 window.getAdminStats = getAdminStats;
-// Экспорты
-window.login = login;
-window.register = register;
-window.logout = function() {
-    clearUserData();
-    showSuccess('Вы успешно вышли');
-    showPage('home');
-};
 window.currentUser = currentUser;
 window.saveUserData = saveUserData;
 window.clearUserData = clearUserData;
