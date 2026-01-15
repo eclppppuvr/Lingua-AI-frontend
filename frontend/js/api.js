@@ -1,14 +1,6 @@
 // frontend/js/api.js - API система с админ-функциями
 
-const isGitHubPages = window.location.hostname.includes('github.io');
-const isLocalhost = window.location.hostname === 'localhost' ||
-window.location.hostname === '127.0.0.1';
-
-const API_BASE_URL = isGitHubPages
-? 'https://corsproxy.io/?http://90.156.230.7:8000'
-: isLocalhost
-? 'http://90.156.230.7:8000'
-: '/api';
+const API_BASE_URL = '/api';
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
