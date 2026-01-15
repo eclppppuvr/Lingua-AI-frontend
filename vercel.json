@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://linguaai.duckdns.org/api/:path*"
+      "destination": "https://api.linguaai.webtm.ru/api/:path*"
     }
   ]
 }
