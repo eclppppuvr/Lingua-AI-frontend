@@ -1,7 +1,14 @@
 // frontend/js/api.js - API система с админ-функциями
 
-// И ЗАМЕНИТЕ базовый URL:
-const API_BASE_URL = '/api';  // Теперь будет проксироваться через Vercel
+const isGitHubPages = window.location.hostname.includes('github.io');
+const isLocalhost = window.location.hostname === 'localhost' ||
+window.location.hostname === '127.0.0.1';
+
+const API_BASE_URL = isGitHubPages
+? 'https://corsproxy.io/?http://90.156.230.7:8000'
+: isLocalhost
+? 'http://90.156.230.7:8000'
+: '/api';
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
@@ -49,15 +56,16 @@ function updateNavigation() {
 
 // ==================== API FUNCTIONS ====================
 async function apiFetch(endpoint, options = {}) {
-    // Всегда используем /api префикс
-    const url = `/api${endpoint}`;
+    let url;
 
-    console.log('🌐 API Request:', {
-        endpoint,
-        url,
-        method: options.method || 'GET',
-        body: options.body ? JSON.parse(options.body) : null
-    });
+    if (isGitHubPages) {
+        // Используем CORS прокси для GitHub Pages
+        url = `https://corsproxy.io/?${encodeURIComponent(`http://90.156.230.7:8000${endpoint}`)}`;
+    } else {
+        url = `${API_BASE_URL}${endpoint}`;
+    }
+
+    console.log('🌐 API Request:', url);
 
     const headers = {
         'Content-Type': 'application/json',
@@ -68,31 +76,16 @@ async function apiFetch(endpoint, options = {}) {
         const response = await fetch(url, {
             ...options,
             headers,
-            credentials: 'include'
-        });
-
-        console.log('📡 API Response:', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url
+            credentials: isGitHubPages ? 'omit' : 'include'
         });
 
         if (!response.ok) {
-            let errorText = '';
-            try {
-                errorText = await response.text();
-            } catch (e) {
-                errorText = 'Cannot read error response';
-            }
-            throw new Error(`HTTP ${response.status}: ${response.statusText}. ${errorText}`);
+            throw new Error(`HTTP ${response.status}`);
         }
 
-        const result = await response.json();
-        console.log('✅ API Success:', result);
-        return result;
-
+        return await response.json();
     } catch (error) {
-        console.error(`❌ API Error (${endpoint}):`, error);
+        console.error('API Error:', error);
         throw error;
     }
 }
