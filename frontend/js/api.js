@@ -5,6 +5,7 @@ const API_BASE_URL = '/api';
 // ==================== STATE MANAGEMENT ====================
 let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
 
+// ==================== Вспомогательные функции ====================
 function saveUserData(userData) {
     currentUser = userData;
     localStorage.setItem('current_user', JSON.stringify(userData));
@@ -27,7 +28,6 @@ function updateNavigation() {
             <button class="btn btn-secondary" onclick="logout()">Выход</button>
         `;
 
-        // Показать кнопку админа если пользователь - админ
         const adminBtn = document.getElementById('admin-btn');
         if (adminBtn && currentUser.role === 'admin') {
             adminBtn.style.display = 'inline-flex';
@@ -38,7 +38,6 @@ function updateNavigation() {
             <button class="btn btn-primary" onclick="showPage('register'); return false;">Регистрация</button>
         `;
 
-        // Скрыть кнопку админа
         const adminBtn = document.getElementById('admin-btn');
         if (adminBtn) {
             adminBtn.style.display = 'none';
@@ -113,6 +112,7 @@ async function apiFetch(endpoint, options = {}) {
 
 
 // ==================== AUTH FUNCTIONS ====================
+// ==================== AUTH FUNCTIONS ====================
 async function login(email, password) {
     try {
         const user = await apiFetch('/auth/login', {
@@ -120,14 +120,27 @@ async function login(email, password) {
             body: JSON.stringify({ email, password })
         });
 
-        saveUserData(user);
-        showSuccess('Вход выполнен успешно!');
-        showPage('library');
-        return user;
+        // Сохраняем пользователя с токеном
+        if (user && user.token) {
+            saveUserData(user);
+            showSuccess('Вход выполнен успешно!');
+            showPage('library');
+            return user;
+        } else {
+            throw new Error('Invalid response from server');
+        }
 
     } catch (error) {
         console.error('Login failed:', error);
-        throw error;
+
+        // Пользовательские сообщения об ошибках
+        if (error.message.includes('Network error')) {
+            throw new Error('Не удалось подключиться к серверу. Проверьте интернет-соединение.');
+        } else if (error.message.includes('404')) {
+            throw new Error('Сервер не найден. Проверьте настройки backend.');
+        } else {
+            throw new Error('Неверный email или пароль');
+        }
     }
 }
 
@@ -138,16 +151,26 @@ async function register(username, email, password) {
             body: JSON.stringify({ username, email, password })
         });
 
-        saveUserData(user);
-        showSuccess('Регистрация успешна!');
-        showPage('library');
-        return user;
+        if (user && user.token) {
+            saveUserData(user);
+            showSuccess('Регистрация успешна!');
+            showPage('library');
+            return user;
+        } else {
+            throw new Error('Invalid response from server');
+        }
 
     } catch (error) {
         console.error('Registration failed:', error);
-        throw error;
+
+        if (error.message.includes('Network error')) {
+            throw new Error('Не удалось подключиться к серверу');
+        } else {
+            throw new Error('Ошибка регистрации: ' + error.message);
+        }
     }
 }
+
 
 async function logout() {
     try {
@@ -467,14 +490,11 @@ async function speakWord(word) {
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
     if (currentUser) {
-        getCurrentUser().catch(console.error);
+        updateNavigation();
     }
 });
 
 // ==================== EXPORTS ====================
-window.login = login;
-window.register = register;
-window.logout = logout;
 window.loadTexts = loadTexts;
 window.loadText = loadText;
 window.analyzeAudio = analyzeAudio;
@@ -489,6 +509,14 @@ window.deleteText = deleteText;
 window.updateText = updateText;
 window.getAllTextsForAdmin = getAllTextsForAdmin;
 window.getAdminStats = getAdminStats;
+// Экспорты
+window.login = login;
+window.register = register;
+window.logout = function() {
+    clearUserData();
+    showSuccess('Вы успешно вышли');
+    showPage('home');
+};
 window.currentUser = currentUser;
 window.saveUserData = saveUserData;
 window.clearUserData = clearUserData;
